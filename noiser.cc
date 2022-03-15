@@ -81,9 +81,17 @@ unsigned char Noiser::getBiome(int x, int z, float *biomeSet) {
     }
 
     biomeSet[0] = temperatureNoise.in2D(x + 1000, z + 1000);
-    biomeSet[1] = humidityNoise.in2D(x + 1000, z + 1000);
-    biomeSet[2] = riverNoise.in2D(x + 1000, z + 1000);
-    biomeSet[3] = oceanNoise.in2D(x + 1000, z + 1000);
+    biomeSet[1] = temperatureNoise.in2D(x + 1001, z + 1000);
+    biomeSet[2] = temperatureNoise.in2D(x + 999, z + 1000);
+    biomeSet[3] = temperatureNoise.in2D(x + 1000, z + 1001);
+    biomeSet[4] = temperatureNoise.in2D(x + 1000, z + 999);
+    biomeSet[5] = humidityNoise.in2D(x + 1000, z + 1000);
+    biomeSet[6] = humidityNoise.in2D(x + 1001, z + 1000);
+    biomeSet[7] = humidityNoise.in2D(x + 999, z + 1000);
+    biomeSet[8] = humidityNoise.in2D(x + 1000, z + 1001);
+    biomeSet[9] = humidityNoise.in2D(x + 1000, z + 999);
+    biomeSet[10] = riverNoise.in2D(x + 1000, z + 1000);
+    biomeSet[11] = oceanNoise.in2D(x + 1000, z + 1000);
 
     return biome;
   }
@@ -193,10 +201,10 @@ void Noiser::fillElevations(int ox, int oz, int numCells, float *elevations, flo
   unsigned int index = 0;
   for (int z = 0; z < numCellsOverscan; z++) {
     for (int x = 0; x < numCellsOverscan; x++) {
-      float cellBiomes[4];
+      float cellBiomes[12];
       elevations[index] = getElevation((ox * numCells) + x, (oz * numCells) + z, cellBiomes);
-      for (int i = 0; i < 4; i++) {
-        biomes[4 * index + i] = cellBiomes[i];
+      for (int i = 0; i < 12; i++) {
+        biomes[12 * index + i] = cellBiomes[i];
       }
       index++;
     }
