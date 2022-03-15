@@ -47,7 +47,7 @@ Noiser::Noiser(int seed) :
 
 Noiser::~Noiser() { }
 
-unsigned char Noiser::getBiome(int x, int z) {
+unsigned char Noiser::getBiome(int x, int z, float *biomeSet) {
   const std::pair<int, int> key(x, z);
   std::unordered_map<std::pair<int, int>, unsigned char>::iterator entryIter = biomeCache.find(key);
 
@@ -79,6 +79,11 @@ unsigned char Noiser::getBiome(int x, int z) {
       const int h = (int)std::floor(std::pow(humidityNoise.in2D(x + 1000, z + 1000), 1.3) * 16.0);
       biome = (unsigned char)BIOMES_TEMPERATURE_HUMIDITY[t + 16 * h];
     }
+
+    biomeSet[0] = temperatureNoise.in2D(x + 1000, z + 1000);
+    biomeSet[1] = humidityNoise.in2D(x + 1000, z + 1000);
+    biomeSet[2] = riverNoise.in2D(x + 1000, z + 1000);
+    biomeSet[3] = oceanNoise.in2D(x + 1000, z + 1000);
 
     return biome;
   }
@@ -115,35 +120,37 @@ float Noiser::getElevation(int x, int z, float *biomes) {
     std::unordered_map<unsigned char, unsigned int> biomeCounts;
     for (int dz = -8; dz <= 8; dz++) {
       for (int dx = -8; dx <= 8; dx++) {
-        biomeCounts[getBiome(x + dx, z + dz)]++;
+        biomeCounts[getBiome(x + dx, z + dz, biomes)]++;
       }
     }
 
-    unsigned char maxBiomes[2];
-    unsigned int maxBiomeCounts[2];
+    // unsigned char maxBiomes[2];
+    // unsigned int maxBiomeCounts[2];
 
-    maxBiomeCounts[0] = 0;
-    maxBiomeCounts[1] = 0;
+    // maxBiomeCounts[0] = 0;
+    // maxBiomeCounts[1] = 0;
 
     float elevationSum = 0;
     for (auto const &iter : biomeCounts) {
       elevationSum += iter.second * getBiomeHeight(iter.first, x, z);
 
       // get most weighted two biomes
-      if (iter.second > maxBiomeCounts[0]) {
-        maxBiomeCounts[1] = maxBiomeCounts[0];
-        maxBiomes[1] = maxBiomes[0];
+      // if (iter.second > maxBiomeCounts[0]) {
+      //   maxBiomeCounts[1] = maxBiomeCounts[0];
+      //   maxBiomes[1] = maxBiomes[0];
 
-        maxBiomeCounts[0] = iter.second;
-        maxBiomes[0] = iter.first;
-      }
+      //   maxBiomeCounts[0] = iter.second;
+      //   maxBiomes[0] = iter.first;
+      // }
 
     }
     elevation = elevationSum / ((8 * 2 + 1) * (8 * 2 + 1));
 
-    biomes[0] = maxBiomes[0];
-    biomes[1] = maxBiomeCounts[1] == 0 ? maxBiomes[0] : maxBiomes[1];
-    biomes[2] = (float)maxBiomeCounts[0] / (float)(maxBiomeCounts[0] + maxBiomeCounts[1]);
+    getBiome(x, z, biomes);
+
+    // biomes[0] = maxBiomes[0];
+    // biomes[1] = maxBiomeCounts[1] == 0 ? maxBiomes[0] : maxBiomes[1];
+    // biomes[2] = (float)maxBiomeCounts[0] / (float)(maxBiomeCounts[0] + maxBiomeCounts[1]);
 
     return elevation;
   }
@@ -157,39 +164,39 @@ double Noiser::getHumidity(double x, double z) {
   return humidityNoise.in2D(x + 1000, z + 1000);
 }
 
-void Noiser::fillBiomes(int ox, int oz, int numCells, unsigned char *biomes, unsigned char *temperature, unsigned char *humidity) {
-  float totalTemperature = 0;
-  float totalHumidity = 0;
+// void Noiser::fillBiomes(int ox, int oz, int numCells, unsigned char *biomes, unsigned char *temperature, unsigned char *humidity) {
+//   float totalTemperature = 0;
+//   float totalHumidity = 0;
 
-  int numCellsOverscan = numCells + 3;
+//   int numCellsOverscan = numCells + 3;
 
-  unsigned int index = 0;
-  for (int z = 0; z < numCells + 3; z++) {
-    for (int x = 0; x < numCells + 3; x++) {
-      int ax = (ox * numCells) + x - 1;
-      int az = (oz * numCells) + z - 1;
-      biomes[index++] = getBiome(ax, az);
-      totalTemperature += this->getTemperature(ax, az);
-      totalHumidity += this->getHumidity(ax, az);
-    }
-  }
+//   unsigned int index = 0;
+//   for (int z = 0; z < numCells + 3; z++) {
+//     for (int x = 0; x < numCells + 3; x++) {
+//       int ax = (ox * numCells) + x - 1;
+//       int az = (oz * numCells) + z - 1;
+//       biomes[index++] = getBiome(ax, az);
+//       totalTemperature += this->getTemperature(ax, az);
+//       totalHumidity += this->getHumidity(ax, az);
+//     }
+//   }
 
-  totalTemperature /= (numCellsOverscan * numCellsOverscan);
-  totalHumidity /= (numCellsOverscan * numCellsOverscan);
+//   totalTemperature /= (numCellsOverscan * numCellsOverscan);
+//   totalHumidity /= (numCellsOverscan * numCellsOverscan);
 
-  *temperature = (unsigned char)(std::min<float>(totalTemperature, 1.0) * 255.0);
-  *humidity = (unsigned char)(std::min<float>(totalHumidity, 1.0) * 255.0);
-}
+//   *temperature = (unsigned char)(std::min<float>(totalTemperature, 1.0) * 255.0);
+//   *humidity = (unsigned char)(std::min<float>(totalHumidity, 1.0) * 255.0);
+// }
 
 void Noiser::fillElevations(int ox, int oz, int numCells, float *elevations, float *biomes) {
   int numCellsOverscan = numCells + 3;
   unsigned int index = 0;
   for (int z = 0; z < numCellsOverscan; z++) {
     for (int x = 0; x < numCellsOverscan; x++) {
-      float cellBiomes[3];
+      float cellBiomes[4];
       elevations[index] = getElevation((ox * numCells) + x, (oz * numCells) + z, cellBiomes);
-      for (int i = 0; i < 3; i++) {
-        biomes[3 * index + i] = cellBiomes[i];
+      for (int i = 0; i < 4; i++) {
+        biomes[4 * index + i] = cellBiomes[i];
       }
       index++;
     }
